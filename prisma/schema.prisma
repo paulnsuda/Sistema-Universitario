@@ -1,0 +1,91 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Estudiante {
+  id_estudiante     Int          @id @default(autoincrement())
+  nombres           String       @db.VarChar(100)
+  apellidos         String       @db.VarChar(100)
+  cedula            String       @unique @db.VarChar(10)
+  email             String       @unique @db.VarChar(255)
+  fecha_nacimiento  DateTime?
+  inscripciones     Inscripcion[]
+}
+
+model Carrera {
+  id_carrera        Int       @id @default(autoincrement())
+  nombre_carrera    String    @unique @db.VarChar(255)
+  descripcion       String?
+  duracion_semestres Int?
+  materias          Materia[]
+}
+
+model Profesor {
+  id_profesor       Int       @id @default(autoincrement())
+  nombres           String    @db.VarChar(100)
+  apellidos         String    @db.VarChar(100)
+  cedula            String    @unique @db.VarChar(10)
+  email             String    @unique @db.VarChar(255)
+  titulos           Titulo[]
+  materias          Profesor_Materia[]
+}
+
+model Titulo {
+  id_titulo         Int       @id @default(autoincrement())
+  id_profesor       Int
+  nombre_titulo     String    @db.VarChar(255)
+  universidad_emisora String? @db.VarChar(255)
+  fecha_obtencion   DateTime?
+
+  profesor          Profesor  @relation(fields: [id_profesor], references: [id_profesor], onDelete: Cascade)
+}
+
+model Aula {
+  id_aula           Int      @id @default(autoincrement())
+  numero_aula       String   @db.VarChar(50)
+  edificio          String?  @db.VarChar(100)
+  capacidad         Int?
+  materia           Materia?
+}
+
+model Materia {
+  id_materia        Int       @id @default(autoincrement())
+  id_carrera        Int
+  id_aula           Int       @unique
+  nombre_materia    String    @db.VarChar(255)
+  creditos          Int
+
+  carrera           Carrera   @relation(fields: [id_carrera], references: [id_carrera])
+  aula              Aula      @relation(fields: [id_aula], references: [id_aula])
+  inscripciones     Inscripcion[]
+  profesores        Profesor_Materia[]
+}
+
+model Inscripcion {
+  id_inscripcion    Int       @id @default(autoincrement())
+  id_estudiante     Int
+  id_materia        Int
+  fecha_inscripcion DateTime  @default(now())
+  semestre          String?   @db.VarChar(50)
+  calificacion_final Decimal? @db.Decimal(4, 2)
+
+  estudiante        Estudiante @relation(fields: [id_estudiante], references: [id_estudiante])
+  materia           Materia    @relation(fields: [id_materia], references: [id_materia])
+
+  @@unique([id_estudiante, id_materia], name: "idx_estudiante_materia_unica")
+}
+
+model Profesor_Materia {
+  id_profesor       Int
+  id_materia        Int
+
+  profesor          Profesor @relation(fields: [id_profesor], references: [id_profesor])
+  materia           Materia  @relation(fields: [id_materia], references: [id_materia])
+
+  @@id([id_profesor, id_materia])
+}
