@@ -13,7 +13,7 @@ export class CarrerasService {
     });
   }
 
-  findAll() {
+  async findAll() {
     return this.prisma.carrera.findMany();
   }
 
@@ -28,15 +28,16 @@ export class CarrerasService {
     return carrera;
   }
 
-  update(id: number, updateCarreraDto: UpdateCarreraDto) {
-    return this.prisma.carrera.update({
-      where: { id_carrera: id },
-      data: updateCarreraDto,
-    });
-  }
+// carreras.service.ts
+async update(id: number, dto: UpdateCarreraDto) {
+  const exists = await this.prisma.carrera.findUnique({ where: { id_carrera: id } });
+  if (!exists) throw new NotFoundException(`Carrera ${id} no existe`);
+  return this.prisma.carrera.update({ where: { id_carrera: id }, data: dto });
+}
+
 
   async remove(id: number) {
-    await this.findOne(id); // Reutilizamos findOne para verificar si existe
+    await this.findOne(id); 
     return this.prisma.carrera.delete({
       where: { id_carrera: id },
     });

@@ -26,14 +26,14 @@ export class ProfesoresService {
 
   findAll() {
     return this.prisma.profesor.findMany({
-      include: { titulos: true, materias: true },
+      include: { titulos: true, materias_asignadas: true },
     });
   }
 
   async findOne(id: number) {
     const profesor = await this.prisma.profesor.findUnique({
       where: { id_profesor: id },
-      include: { titulos: true, materias: true }, 
+      include: { titulos: true, materias_asignadas: true }, 
     });
 
     if (!profesor) {
@@ -41,16 +41,12 @@ export class ProfesoresService {
     }
     return profesor;
   }
+// profesores.service.ts
+async update(id: number, updateProfesorDto: UpdateProfesoreDto) {
+  const { titulos = [], ...rest } = updateProfesorDto ?? {}; // <— defaults
+  // ...
+}
 
-  update(id: number, updateProfesorDto: UpdateProfesoreDto) {
-    
-    const { titulos, materias_asignadas, ...profesorData } = updateProfesorDto;
-
-    return this.prisma.profesor.update({
-      where: { id_profesor: id },
-      data: profesorData,
-    });
-  }
 
   async remove(id: number) {
     await this.findOne(id);

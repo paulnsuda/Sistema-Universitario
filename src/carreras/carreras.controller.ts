@@ -22,13 +22,12 @@ export class CarrerasController {
     return this.carrerasService.findOne(id);
   }
 
-  @Patch(':id')
-  update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() updateCarreraDto: UpdateCarreraDto,
-  ) {
-    return this.carrerasService.update(id, updateCarreraDto);
-  }
+
+@Patch(':id')
+update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateCarreraDto) {
+  return this.carrerasService.update(id, dto);
+}
+
 
   @Delete(':id')
   remove(@Param('id', ParseIntPipe) id: number) {

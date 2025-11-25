@@ -26,7 +26,7 @@ export class InscripcionesService {
     }
   }
 
-  findAll() {
+  async findAll() {
     return this.prisma.inscripcion.findMany({
       
       include: {
@@ -36,5 +36,30 @@ export class InscripcionesService {
     });
   }
 
-  
+  async findOne(id: number) {
+    const inscripcion = await this.prisma.inscripcion.findUnique({
+      where: { id_inscripcion: id },
+      include: {
+        estudiante: { select: { id_estudiante: true, nombres: true, apellidos: true } },
+        materia: { select: { id_materia: true, nombre_materia: true } },
+      },
+    });
+
+    if (!inscripcion) throw new NotFoundException('Inscripción no encontrada');
+    return inscripcion;
+  }
+
+  async update(id: number, updateInscripcioneDto: UpdateInscripcioneDto) {
+    return this.prisma.inscripcion.update({
+      where: { id_inscripcion: id },
+      data: updateInscripcioneDto,
+    });
+  }
+
+  async remove(id: number) {
+    await this.findOne(id); 
+    return this.prisma.inscripcion.delete({
+      where: { id_inscripcion: id },
+    });
+  }
 }

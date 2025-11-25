@@ -22,13 +22,11 @@ export class TitulosController {
     return this.titulosService.findOne(id);
   }
 
-  @Patch(':id')
-  update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() updateTituloDto: UpdateTituloDto,
-  ) {
-    return this.titulosService.update(id, updateTituloDto);
-  }
+ @Patch(':id')
+update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateTituloDto) {
+  return this.titulosService.update(id, dto);
+}
+
 
   @Delete(':id')
   remove(@Param('id', ParseIntPipe) id: number) {

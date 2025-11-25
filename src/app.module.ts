@@ -11,9 +11,10 @@ import { MateriaModule } from './materia/materia.module';
 import { TitulosModule } from './titulos/titulos.module';
 import { ProfesorMateriaModule } from './profesor-materia/profesor-materia.module';
 import { InscripcionesModule } from './inscripciones/inscripciones.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
-  imports: [PrismaModule, EstudiantesModule, ProfesoresModule, CarrerasModule, AulasModule, MateriaModule, TitulosModule, ProfesorMateriaModule, InscripcionesModule],
+  imports: [PrismaModule, EstudiantesModule, ProfesoresModule, CarrerasModule, AulasModule, MateriaModule, TitulosModule, ProfesorMateriaModule, InscripcionesModule, AuthModule],
   controllers: [AppController],
   providers: [AppService],
 })

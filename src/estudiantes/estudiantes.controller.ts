@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Query, Param, Body, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Query, Param, Body, ParseIntPipe, Delete, Patch } from '@nestjs/common';
 import { EstudiantesService } from './estudiantes.service';
 import { CreateEstudianteDto } from './dto/create-estudiante.dto';
 
@@ -19,6 +19,16 @@ export class EstudiantesController {
   @Post()
   create(@Body() dto: CreateEstudianteDto) {
     return this.estudiantesService.create(dto);
+  }
+
+  @Delete(':id')
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.estudiantesService.remove(id);
+  }
+
+  @Patch(':id')
+  update(@Param('id', ParseIntPipe) id: number, @Body() dto: CreateEstudianteDto) {
+    return this.estudiantesService.update(id, dto);
   }
 }
 

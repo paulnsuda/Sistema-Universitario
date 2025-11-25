@@ -1,4 +1,4 @@
-import { IsString, IsEmail, Length, IsOptional, IsDateString } from 'class-validator';
+import { IsString, IsEmail, Length, IsOptional, IsDateString, IsNotEmpty } from 'class-validator';
 
 export class CreateEstudianteDto {
   @IsString()
@@ -15,6 +15,13 @@ export class CreateEstudianteDto {
 
   @IsEmail()
   email: string;
+
+  // 👇 AGREGA ESTE BLOQUE PARA SOLUCIONAR EL ERROR
+  @IsString()
+  @IsNotEmpty()
+  @Length(6, 50, { message: 'La contraseña debe tener entre 6 y 50 caracteres' })
+  password: string;
+  // 👆 --------------------------------------------
 
   @IsOptional()
   @IsDateString()

@@ -8,14 +8,14 @@ export class MateriasService {
   constructor(private prisma: PrismaService) {}
 
   create(createMateriaDto: CreateMateriaDto) {
-    // Prisma se encarga de crear la materia y enlazar las claves foráneas.
+   
     return this.prisma.materia.create({
       data: createMateriaDto,
     });
   }
 
-  findAll() {
-    // Usamos 'include' para que la respuesta también traiga la información de la carrera y el aula.
+  async findAll() {
+    
     return this.prisma.materia.findMany({
       include: {
         carrera: true,
@@ -39,7 +39,7 @@ export class MateriasService {
     return materia;
   }
 
-  update(id: number, updateMateriaDto: UpdateMateriaDto) {
+  async update(id: number, updateMateriaDto: UpdateMateriaDto) {
     return this.prisma.materia.update({
       where: { id_materia: id },
       data: updateMateriaDto,

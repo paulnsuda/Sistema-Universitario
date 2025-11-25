@@ -7,13 +7,13 @@ import { PrismaService } from 'src/prisma/prisma.service';
 export class AulasService {
   constructor(private prisma: PrismaService) {}
 
-  create(createAulaDto: CreateAulaDto) {
+  async create(createAulaDto: CreateAulaDto) {
     return this.prisma.aula.create({
       data: createAulaDto,
     });
   }
 
-  findAll() {
+  async findAll() {
     return this.prisma.aula.findMany();
   }
 
@@ -28,7 +28,7 @@ export class AulasService {
     return aula;
   }
 
-  update(id: number, updateAulaDto: UpdateAulaDto) {
+  async update(id: number, updateAulaDto: UpdateAulaDto) {
     return this.prisma.aula.update({
       where: { id_aula: id },
       data: updateAulaDto,
@@ -36,7 +36,7 @@ export class AulasService {
   }
 
   async remove(id: number) {
-    await this.findOne(id); // Reutilizamos findOne para verificar si existe
+    await this.findOne(id); 
     return this.prisma.aula.delete({
       where: { id_aula: id },
     });
