@@ -54,4 +54,5 @@ async update(id: number, updateProfesorDto: UpdateProfesoreDto) {
       where: { id_profesor: id },
     });
   }
+  
 }

@@ -2,12 +2,14 @@ import {Controller,Get,Post,Body,Patch,Param,Delete,ParseIntPipe,} from '@nestjs
 import { CarrerasService } from './carreras.service';
 import { CreateCarreraDto } from './dto/create-carrera.dto';
 import { UpdateCarreraDto } from './dto/update-carrera.dto';
-
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { UseGuards } from '@nestjs/common';
 @Controller('carreras')
 export class CarrerasController {
   constructor(private readonly carrerasService: CarrerasService) {}
 
   @Post()
+  @UseGuards(JwtAuthGuard)
   create(@Body() createCarreraDto: CreateCarreraDto) {
     return this.carrerasService.create(createCarreraDto);
   }
