@@ -9,7 +9,7 @@ export class CarrerasController {
   constructor(private readonly carrerasService: CarrerasService) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard)
+ // @UseGuards(JwtAuthGuard) // Protección con JWT 
   create(@Body() createCarreraDto: CreateCarreraDto) {
     return this.carrerasService.create(createCarreraDto);
   }

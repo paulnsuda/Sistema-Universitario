@@ -1,3 +1,4 @@
+
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
@@ -5,6 +6,10 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }));
+  
+  // Habilitar CORS por si luego conectas un Frontend
+  app.enableCors(); 
+
   await app.listen(3001);
   console.log(`🚀 Servidor corriendo en http://localhost:3001`);
 }

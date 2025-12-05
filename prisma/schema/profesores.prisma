@@ -1,0 +1,42 @@
+// === SCHEMA: PROFESORES ===
+
+model Profesor {
+  id_profesor        Int               @id @default(autoincrement())
+  nombres            String
+  apellidos          String
+  cedula             String            @unique
+  email              String            @unique
+  
+  titulos            Titulo[]
+  materias_asignadas ProfesorMateria[]
+
+  @@map("profesores")
+  @@schema("profesores")
+}
+
+model Titulo {
+  id_titulo           Int       @id @default(autoincrement())
+  nombre_titulo       String
+  universidad_emisora String?
+  fecha_obtencion     DateTime? @db.Date
+
+  id_profesor         Int
+  profesor            Profesor  @relation(fields: [id_profesor], references: [id_profesor], onDelete: Cascade)
+
+  @@map("titulos")
+  @@schema("profesores")
+}
+
+model ProfesorMateria {
+  id          Int      @id @default(autoincrement())
+  
+  id_profesor Int
+  profesor    Profesor @relation(fields: [id_profesor], references: [id_profesor])
+  
+  // Relación Externa (apunta a 'carreras.prisma')
+  id_materia  Int
+  materia     Materia  @relation(fields: [id_materia], references: [id_materia])
+
+  @@map("profesor_materia")
+  @@schema("profesores")
+}

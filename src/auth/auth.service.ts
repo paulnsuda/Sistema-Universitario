@@ -1,6 +1,6 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { PrismaService } from 'src/prisma/prisma.service'; // Asegúrate que la ruta sea correcta
+import { PrismaService } from 'src/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { LoginDto } from './dto/login.dto';
 
@@ -14,27 +14,28 @@ export class AuthService {
   async login(loginDto: LoginDto) {
     const { email, password } = loginDto;
 
-    // 1. Buscar usuario en la BD
-    const estudiante = await this.prisma.estudiante.findUnique({
+    // 1. Buscar en la tabla USUARIO (antes era estudiante)
+    const usuario = await this.prisma.usuario.findUnique({
       where: { email },
+      include: { rol: true } // Traemos el rol para usarlo en el token si quieres
     });
 
-    if (!estudiante) {
+    if (!usuario) {
       throw new UnauthorizedException('Credenciales inválidas (Email)');
     }
 
-    // 2. Verificar la contraseña encriptada
-    const isPasswordValid = await bcrypt.compare(password, estudiante.password);
+    // 2. Verificar password
+    const isPasswordValid = await bcrypt.compare(password, usuario.password);
 
     if (!isPasswordValid) {
       throw new UnauthorizedException('Credenciales inválidas (Password)');
     }
 
-    // 3. Generar el JWT
+    // 3. Generar JWT (Incluimos el rol en el payload)
     const payload = { 
-      sub: estudiante.id_estudiante, 
-      email: estudiante.email,
-      nombre: estudiante.nombres 
+      sub: usuario.id_usuario, 
+      email: usuario.email, 
+      rol: usuario.rol.nombre_rol 
     };
 
     return {

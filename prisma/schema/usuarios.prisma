@@ -1,0 +1,74 @@
+// === SCHEMA: USUARIOS ===
+
+model Usuario {
+  id_usuario       Int       @id @default(autoincrement())
+  nombres          String
+  apellidos        String
+  cedula           String    @unique
+  email            String    @unique
+  password         String    @db.VarChar(255)
+  fecha_nacimiento DateTime? @db.Date
+  
+  // Relaciones
+  id_rol           Int
+  rol              Rol       @relation(fields: [id_rol], references: [id_rol])
+
+  inscripciones    Inscripcion[]
+
+  @@map("usuarios")
+  @@schema("usuarios")
+}
+
+model Rol {
+  id_rol      Int          @id @default(autoincrement())
+  nombre_rol  String       @unique // Ej: "Admin", "Estudiante", "Profesor"
+  
+  usuarios    Usuario[]
+  permisos    RolPermiso[] 
+
+  @@map("roles")
+  @@schema("usuarios")
+}
+
+model Permiso {
+  id_permiso     Int          @id @default(autoincrement())
+  nombre_permiso String       @unique 
+  clave          String       @unique // Ej: "CREAR_MATERIA"
+  
+  roles          RolPermiso[]
+
+  @@map("permisos")
+  @@schema("usuarios")
+}
+
+model RolPermiso {
+  id_rol     Int
+  id_permiso Int
+  
+  rol        Rol     @relation(fields: [id_rol], references: [id_rol])
+  permiso    Permiso @relation(fields: [id_permiso], references: [id_permiso])
+
+  @@id([id_rol, id_permiso])
+  @@map("roles_permisos")
+  @@schema("usuarios")
+}
+
+model Inscripcion {
+  id_inscripcion     Int      @id @default(autoincrement())
+  fecha_inscripcion  DateTime @default(now())
+  calificacion_final Decimal? @db.Decimal(4, 2)
+
+  // Relaciones Locales
+  id_usuario         Int
+  usuario            Usuario  @relation(fields: [id_usuario], references: [id_usuario])
+  
+  // Relaciones Externas (apuntan a modelos en 'carreras.prisma')
+  id_materia         Int
+  materia            Materia  @relation(fields: [id_materia], references: [id_materia])
+  
+  id_ciclo           Int
+  ciclo              Ciclo    @relation(fields: [id_ciclo], references: [id_ciclo])
+
+  @@map("inscripciones")
+  @@schema("usuarios")
+}

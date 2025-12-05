@@ -14,8 +14,5 @@ export class CreateMateriaDto {
   @IsPositive()
   id_carrera: number;
 
-  // Clave foránea para el Aula
-  @IsInt()
-  @IsPositive()
-  id_aula: number;
+  
 }
