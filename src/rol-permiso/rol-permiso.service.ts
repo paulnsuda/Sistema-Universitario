@@ -1,11 +1,12 @@
 import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
 import { CreateRolPermisoDto } from './dto/create-rol-permiso.dto';
-import { PrismaService } from 'src/prisma/prisma.service';
-import { Prisma } from '@prisma/client';
+// Importamos el servicio de Usuarios
+import { PrismaUsuariosService } from 'src/prisma/prisma-usuarios.service';
+import { Prisma } from '@prisma/client-usuarios'; // Nota: Importamos el tipo de error del cliente específico
 
 @Injectable()
 export class RolPermisoService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaUsuariosService) {} // <--- Inyección correcta
 
   // ASIGNAR PERMISO A ROL
   async create(dto: CreateRolPermisoDto) {
@@ -16,7 +17,7 @@ export class RolPermisoService {
           id_permiso: dto.id_permiso,
         },
       });
-    } catch (error) {
+    } catch (error: any) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
           throw new ConflictException('Este rol ya tiene asignado este permiso.');
@@ -33,27 +34,26 @@ export class RolPermisoService {
   async findAll() {
     return this.prisma.rolPermiso.findMany({
       include: {
-        rol: true,     // Ver nombre del rol
-        permiso: true, // Ver nombre del permiso
+        rol: true,
+        permiso: true,
       },
     });
   }
 
-  // ELIMINAR (Necesita ambos IDs)
+  // ELIMINAR
   async remove(id_rol: number, id_permiso: number) {
     try {
       return await this.prisma.rolPermiso.delete({
         where: {
-          // Prisma genera este nombre compuesto automáticamente para la clave primaria @@id([id_rol, id_permiso])
           id_rol_id_permiso: {
             id_rol: id_rol,
             id_permiso: id_permiso,
           },
         },
       });
-    } catch (error) {
+    } catch (error: any) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
-        throw new NotFoundException('No se encontró esa asignación de permiso para eliminar.');
+        throw new NotFoundException('No se encontró esa asignación para eliminar.');
       }
       throw error;
     }

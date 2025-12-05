@@ -1,19 +1,20 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
-import { PrismaService } from 'src/prisma/prisma.service';
-import { Prisma } from '@prisma/client';
+// Importamos el servicio específico de Usuarios
+import { PrismaUsuariosService } from 'src/prisma/prisma-usuarios.service';
+import { Prisma } from '@prisma/client-usuarios'; // Importamos tipos del cliente específico
 
 @Injectable()
 export class RolesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaUsuariosService) {} // Inyección corregida
 
   async create(createRoleDto: CreateRoleDto) {
     try {
       return await this.prisma.rol.create({
         data: createRoleDto,
       });
-    } catch (error) {
+    } catch (error: any) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
           throw new ConflictException('Ya existe un rol con ese nombre.');
@@ -25,7 +26,7 @@ export class RolesService {
 
   async findAll() {
     return this.prisma.rol.findMany({
-      include: { permisos: true } // Muestra qué permisos tiene cada rol
+      include: { permisos: true } 
     });
   }
 
@@ -45,7 +46,7 @@ export class RolesService {
         where: { id_rol: id },
         data: updateRoleDto,
       });
-    } catch (error) {
+    } catch (error: any) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
           throw new ConflictException('Ya existe un rol con ese nombre.');

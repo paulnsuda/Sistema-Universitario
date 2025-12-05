@@ -1,19 +1,20 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { CreatePermisoDto } from './dto/create-permiso.dto';
 import { UpdatePermisoDto } from './dto/update-permiso.dto';
-import { PrismaService } from 'src/prisma/prisma.service';
-import { Prisma } from '@prisma/client';
+// Importamos el servicio específico de Usuarios
+import { PrismaUsuariosService } from 'src/prisma/prisma-usuarios.service';
+import { Prisma } from '@prisma/client-usuarios'; // Importamos tipos del cliente específico
 
 @Injectable()
 export class PermisosService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaUsuariosService) {} // Inyección corregida
 
   async create(createPermisoDto: CreatePermisoDto) {
     try {
       return await this.prisma.permiso.create({
         data: createPermisoDto,
       });
-    } catch (error) {
+    } catch (error: any) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
           throw new ConflictException('Ya existe un permiso con ese nombre o clave.');
@@ -42,7 +43,7 @@ export class PermisosService {
         where: { id_permiso: id },
         data: updatePermisoDto,
       });
-    } catch (error) {
+    } catch (error: any) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
           throw new ConflictException('Ya existe otro permiso con ese nombre o clave.');

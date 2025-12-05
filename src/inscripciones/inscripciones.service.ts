@@ -1,84 +1,79 @@
-import { Injectable, ConflictException, NotFoundException,BadRequestException } from '@nestjs/common';
+import { Injectable, ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { CreateInscripcioneDto } from './dto/create-inscripcione.dto';
 import { UpdateInscripcioneDto } from './dto/update-inscripcione.dto';
-import { PrismaService } from 'src/prisma/prisma.service';
-import { Prisma } from '@prisma/client'; // <--- CAMBIO 1: Importar 'Prisma' namespace
+// Importamos AMBOS servicios
+import { PrismaUsuariosService } from 'src/prisma/prisma-usuarios.service';
+import { PrismaCarrerasService } from 'src/prisma/prisma-carreras.service';
 
 @Injectable()
 export class InscripcionesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prismaUsuarios: PrismaUsuariosService, // Para guardar la inscripción
+    private prismaCarreras: PrismaCarrerasService, // Para validar materia y ciclo
+  ) {}
 
-async create(createInscripcioneDto: CreateInscripcioneDto) {
+  async create(createInscripcioneDto: CreateInscripcioneDto) {
+    const { id_estudiante, id_materia, id_ciclo, calificacion_final } = createInscripcioneDto;
+
+    // 1. VALIDACIÓN CRUZADA: Verificar que Materia y Ciclo existan en la OTRA base de datos
+    const materiaExists = await this.prismaCarreras.materia.findUnique({ where: { id_materia } });
+    if (!materiaExists) throw new NotFoundException(`Materia con ID ${id_materia} no encontrada`);
+
+    const cicloExists = await this.prismaCarreras.ciclo.findUnique({ where: { id_ciclo } });
+    if (!cicloExists) throw new NotFoundException(`Ciclo con ID ${id_ciclo} no encontrado`);
+
+    // 2. VALIDACIÓN LOCAL: Verificar Usuario
+    const usuarioExists = await this.prismaUsuarios.usuario.findUnique({ where: { id_usuario: id_estudiante } });
+    if (!usuarioExists) throw new NotFoundException(`Estudiante con ID ${id_estudiante} no encontrado`);
+
+    // 3. Crear Inscripción
     try {
-      // 1. Mapeo de datos (usamos 'any' para evitar conflictos temporales de tipos)
-      const { id_estudiante, semestre, ...rest } = createInscripcioneDto as any;
-
-      // 2. VALIDACIÓN OBLIGATORIA:
-      // El ciclo es obligatorio en la BD. Si no viene, lanzamos error.
-      if (!rest.id_ciclo) {
-        throw new BadRequestException('El ID del ciclo es obligatorio.');
-      }
-
-      return await this.prisma.inscripcion.create({
+      return await this.prismaUsuarios.inscripcion.create({
         data: {
-          // Asignamos id_estudiante (del DTO) al campo id_usuario (de la BD)
-          id_usuario: id_estudiante, 
-          id_materia: rest.id_materia,
-          calificacion_final: rest.calificacion_final,
-          
-          // Como ya validamos arriba, aquí es seguro convertirlo
-          id_ciclo: Number(rest.id_ciclo),
+          id_usuario: id_estudiante,
+          id_materia, // Se guarda el ID plano
+          id_ciclo,   // Se guarda el ID plano
+          calificacion_final,
         },
       });
-    } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    } catch (error: any) {
+        // P2002 salta si hay una restricción unique compuesta (ej: usuario+materia+ciclo)
         if (error.code === 'P2002') {
           throw new ConflictException('El usuario ya está inscrito en esta materia y ciclo.');
         }
-        if (error.code === 'P2003') {
-          throw new NotFoundException('Usuario, Materia o Ciclo no encontrados.');
-        }
-      }
-      throw error;
+        throw error;
     }
   }
 
   async findAll() {
-    return this.prisma.inscripcion.findMany({
+    // Al ser BDs separadas, no podemos hacer 'include: { materia: true }' directamente.
+    // Aquí devolveremos solo los datos de inscripción y el usuario.
+    return this.prismaUsuarios.inscripcion.findMany({
       include: {
         usuario: { select: { id_usuario: true, nombres: true, apellidos: true } },
-        materia: { select: { id_materia: true, nombre_materia: true } },
-        ciclo: true,
       },
     });
   }
 
   async findOne(id: number) {
-    const inscripcion = await this.prisma.inscripcion.findUnique({
+    const inscripcion = await this.prismaUsuarios.inscripcion.findUnique({
       where: { id_inscripcion: id },
       include: {
         usuario: { select: { id_usuario: true, nombres: true, apellidos: true } },
-        materia: { select: { id_materia: true, nombre_materia: true } },
-        ciclo: true,
       },
     });
-
     if (!inscripcion) throw new NotFoundException('Inscripción no encontrada');
     return inscripcion;
   }
 
   async update(id: number, updateInscripcioneDto: UpdateInscripcioneDto) {
     await this.findOne(id);
+    const { id_estudiante, ...data } = updateInscripcioneDto as any;
+    const dataToUpdate = { ...data };
     
-    // Mapeo para update
-    const { id_estudiante, ...rest } = updateInscripcioneDto as any;
-    const dataToUpdate: any = { ...rest };
-    
-    if (id_estudiante) {
-        dataToUpdate.id_usuario = id_estudiante;
-    }
+    if (id_estudiante) dataToUpdate.id_usuario = id_estudiante;
 
-    return this.prisma.inscripcion.update({
+    return this.prismaUsuarios.inscripcion.update({
       where: { id_inscripcion: id },
       data: dataToUpdate,
     });
@@ -86,7 +81,7 @@ async create(createInscripcioneDto: CreateInscripcioneDto) {
 
   async remove(id: number) {
     await this.findOne(id); 
-    return this.prisma.inscripcion.delete({
+    return this.prismaUsuarios.inscripcion.delete({
       where: { id_inscripcion: id },
     });
   }

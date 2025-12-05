@@ -1,13 +1,15 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { CreateProfesorDto } from './dto/create-profesore.dto'; // Asumo el nombre correcto del DTO
-import { UpdateProfesoreDto } from './dto/update-profesore.dto'; // Asumo el nombre correcto del DTO
-import { PrismaService } from 'src/prisma/prisma.service';
+import { CreateProfesorDto } from './dto/create-profesore.dto';
+import { UpdateProfesoreDto } from './dto/update-profesore.dto';
+import { PrismaProfesoresService } from 'src/prisma/prisma-profesores.service'; // <--- CAMBIO
 
 @Injectable()
 export class ProfesoresService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaProfesoresService) {} // <--- CAMBIO
 
   create(createProfesorDto: CreateProfesorDto) {
+    // Extraemos materias_asignadas, pero OJO: no podemos crearlas en una sola transacción
+    // automáticamente si cruzan bases de datos. Por ahora, nos enfocamos en el profesor y títulos.
     const { titulos, materias_asignadas, ...profesorData } = createProfesorDto;
 
     return this.prisma.profesor.create({
@@ -16,7 +18,6 @@ export class ProfesoresService {
         titulos: {
           create: titulos, 
         },
-        
       },
       include: {
         titulos: true, 
@@ -26,27 +27,28 @@ export class ProfesoresService {
 
   findAll() {
     return this.prisma.profesor.findMany({
-      include: { titulos: true, materias_asignadas: true },
+      include: { titulos: true }, // Quitamos materias_asignadas del include por ahora
     });
   }
 
   async findOne(id: number) {
     const profesor = await this.prisma.profesor.findUnique({
       where: { id_profesor: id },
-      include: { titulos: true, materias_asignadas: true }, 
+      include: { titulos: true }, 
     });
-
-    if (!profesor) {
-      throw new NotFoundException(`Profesor con ID #${id} no encontrado`);
-    }
+    if (!profesor) throw new NotFoundException(`Profesor con ID #${id} no encontrado`);
     return profesor;
   }
-// profesores.service.ts
-async update(id: number, updateProfesorDto: UpdateProfesoreDto) {
-  const { titulos = [], ...rest } = updateProfesorDto ?? {}; // <— defaults
-  // ...
-}
 
+  async update(id: number, updateProfesorDto: UpdateProfesoreDto) {
+    const { titulos, materias_asignadas, ...data } = updateProfesorDto;
+    await this.findOne(id);
+    
+    return this.prisma.profesor.update({
+        where: { id_profesor: id },
+        data: data
+    });
+  }
 
   async remove(id: number) {
     await this.findOne(id);
@@ -54,5 +56,4 @@ async update(id: number, updateProfesorDto: UpdateProfesoreDto) {
       where: { id_profesor: id },
     });
   }
-  
 }

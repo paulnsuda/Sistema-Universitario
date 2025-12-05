@@ -1,11 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateCicloDto } from './dto/create-ciclo.dto';
 import { UpdateCicloDto } from './dto/update-ciclo.dto';
-import { PrismaService } from 'src/prisma/prisma.service';
+// Importamos el servicio específico de Carreras
+import { PrismaCarrerasService } from 'src/prisma/prisma-carreras.service';
 
 @Injectable()
 export class CiclosService {
-  constructor(private prisma: PrismaService) {}
+  // Inyectamos PrismaCarrerasService
+  constructor(private prisma: PrismaCarrerasService) {}
 
   // Crear
   async create(createCicloDto: CreateCicloDto) {

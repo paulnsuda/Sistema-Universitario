@@ -18,7 +18,8 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "postinstall": "prisma generate"
+    "prisma:generate": "npx prisma generate --schema=./prisma/carreras/schema.prisma && npx prisma generate --schema=./prisma/profesores/schema.prisma && npx prisma generate --schema=./prisma/usuarios/schema.prisma",
+    "postinstall": "npm run prisma:generate"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
@@ -80,8 +81,5 @@
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node"
-  },
-  "prisma": {
-    "schema": "prisma/schema"
   }
 }

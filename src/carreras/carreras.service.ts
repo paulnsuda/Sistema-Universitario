@@ -1,11 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateCarreraDto } from './dto/create-carrera.dto';
 import { UpdateCarreraDto } from './dto/update-carrera.dto';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { PrismaCarrerasService } from 'src/prisma/prisma-carreras.service'; // <--- CAMBIO
 
 @Injectable()
 export class CarrerasService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaCarrerasService) {} // <--- CAMBIO
 
   create(createCarreraDto: CreateCarreraDto) {
     return this.prisma.carrera.create({
@@ -21,20 +21,14 @@ export class CarrerasService {
     const carrera = await this.prisma.carrera.findUnique({
       where: { id_carrera: id },
     });
-
-    if (!carrera) {
-      throw new NotFoundException(`Carrera con ID #${id} no encontrada`);
-    }
+    if (!carrera) throw new NotFoundException(`Carrera con ID #${id} no encontrada`);
     return carrera;
   }
 
-// carreras.service.ts
-async update(id: number, dto: UpdateCarreraDto) {
-  const exists = await this.prisma.carrera.findUnique({ where: { id_carrera: id } });
-  if (!exists) throw new NotFoundException(`Carrera ${id} no existe`);
-  return this.prisma.carrera.update({ where: { id_carrera: id }, data: dto });
-}
-
+  async update(id: number, dto: UpdateCarreraDto) {
+    await this.findOne(id); // Verificar existencia
+    return this.prisma.carrera.update({ where: { id_carrera: id }, data: dto });
+  }
 
   async remove(id: number) {
     await this.findOne(id); 

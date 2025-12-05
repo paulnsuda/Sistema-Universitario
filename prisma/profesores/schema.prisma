@@ -1,4 +1,14 @@
-// === SCHEMA: PROFESORES ===
+// prisma/profesores/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../node_modules/@prisma/client-profesores"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL_PROFESORES")
+}
 
 model Profesor {
   id_profesor        Int               @id @default(autoincrement())
@@ -11,7 +21,6 @@ model Profesor {
   materias_asignadas ProfesorMateria[]
 
   @@map("profesores")
-  @@schema("profesores")
 }
 
 model Titulo {
@@ -24,7 +33,6 @@ model Titulo {
   profesor            Profesor  @relation(fields: [id_profesor], references: [id_profesor], onDelete: Cascade)
 
   @@map("titulos")
-  @@schema("profesores")
 }
 
 model ProfesorMateria {
@@ -33,10 +41,9 @@ model ProfesorMateria {
   id_profesor Int
   profesor    Profesor @relation(fields: [id_profesor], references: [id_profesor])
   
-  // Relación Externa (apunta a 'carreras.prisma')
+  // RELACIÓN EXTERNA:
+  // Guardamos solo el ID. No podemos usar @relation porque Materia está en otra DB.
   id_materia  Int
-  materia     Materia  @relation(fields: [id_materia], references: [id_materia])
 
   @@map("profesor_materia")
-  @@schema("profesores")
 }
