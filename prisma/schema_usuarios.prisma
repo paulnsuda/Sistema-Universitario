@@ -2,12 +2,13 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../../node_modules/@prisma/client-usuarios"
+  output   = "../node_modules/@prisma/client-usuarios" 
+  // Usa "../" porque el archivo está dentro de la carpeta 'prisma'
 }
 
 datasource db {
   provider = "postgresql"
- // url      = env("DATABASE_URL_USUARIOS")
+
 }
 
 model Usuario {

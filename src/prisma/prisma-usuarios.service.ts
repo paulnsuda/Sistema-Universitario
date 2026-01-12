@@ -1,15 +1,22 @@
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config'; // <--- 1. Importa ConfigService
-import { PrismaClient } from '@prisma/client-usuarios'; // <--- 2. Asegúrate que este sea el nombre correcto que definiste en el 'output' de tu schema
+import { ConfigService } from '@nestjs/config';
+import { PrismaClient } from '@prisma/client-usuarios';
+import { Pool } from 'pg';
+import { PrismaPg } from '@prisma/adapter-pg';
 
 @Injectable()
 export class PrismaUsuariosService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
-  
-  // 3. Agrega este constructor para pasar la URL explícitamente
   constructor(config: ConfigService) {
-    super({
-      datasourceUrl: config.get<string>('DATABASE_URL_USUARIOS'), // <--- Nombre exacto de tu variable en el .env
-    });
+    const connectionString = config.getOrThrow<string>('DATABASE_URL_USUARIOS');
+    
+    // 1. Configuramos el Pool de Postgres
+    const pool = new Pool({ connectionString });
+    
+    // 2. Configuramos el Adaptador de Prisma
+    const adapter = new PrismaPg(pool);
+
+    // 3. Pasamos el adaptador al constructor del padre (PrismaClient)
+    super({ adapter });
   }
 
   async onModuleInit() {

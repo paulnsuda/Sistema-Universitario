@@ -2,12 +2,12 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../../node_modules/@prisma/client-carreras"
+  output   = "../node_modules/@prisma/client-carreras"
 }
 
 datasource db {
   provider = "postgresql"
-  //url      = env("DATABASE_URL_CARRERAS") //
+  
 
 }
 

@@ -4,6 +4,7 @@ import { PrismaUsuariosService } from 'src/prisma/prisma-usuarios.service'; // <
 import * as bcrypt from 'bcrypt';
 import { LoginDto } from './dto/login.dto';
 
+
 @Injectable()
 export class AuthService {
   constructor(
