@@ -1,88 +1,145 @@
-import { Injectable, ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, InternalServerErrorException } from '@nestjs/common';
+import { PrismaUsuariosService } from '../prisma/prisma-usuarios.service';
+import { PrismaCarrerasService } from '../prisma/prisma-carreras.service';
 import { CreateInscripcioneDto } from './dto/create-inscripcione.dto';
-import { UpdateInscripcioneDto } from './dto/update-inscripcione.dto';
-// Importamos AMBOS servicios
-import { PrismaUsuariosService } from 'src/prisma/prisma-usuarios.service';
-import { PrismaCarrerasService } from 'src/prisma/prisma-carreras.service';
 
 @Injectable()
 export class InscripcionesService {
   constructor(
-    private prismaUsuarios: PrismaUsuariosService, // Para guardar la inscripción
-    private prismaCarreras: PrismaCarrerasService, // Para validar materia y ciclo
+    private prismaUsuarios: PrismaUsuariosService,
+    private prismaCarreras: PrismaCarrerasService,
   ) {}
 
-  async create(createInscripcioneDto: CreateInscripcioneDto) {
-    const { id_estudiante, id_materia, id_ciclo, calificacion_final } = createInscripcioneDto;
+  // =======================================================
+  // PARTE 1: CONSULTAS DERIVADAS
+  // =======================================================
 
-    // 1. VALIDACIÓN CRUZADA: Verificar que Materia y Ciclo existan en la OTRA base de datos
-    const materiaExists = await this.prismaCarreras.materia.findUnique({ where: { id_materia } });
-    if (!materiaExists) throw new NotFoundException(`Materia con ID ${id_materia} no encontrada`);
+  // 1.1 Listar estudiantes activos junto con su carrera
+  async obtenerEstudiantesConCarrera() {
+    const estudiantes = await this.prismaUsuarios.usuario.findMany({
+      where: { estado: true },
+      include: { inscripciones: true }
+    });
 
-    const cicloExists = await this.prismaCarreras.ciclo.findUnique({ where: { id_ciclo } });
-    if (!cicloExists) throw new NotFoundException(`Ciclo con ID ${id_ciclo} no encontrado`);
-
-    // 2. VALIDACIÓN LOCAL: Verificar Usuario
-    const usuarioExists = await this.prismaUsuarios.usuario.findUnique({ where: { id_usuario: id_estudiante } });
-    if (!usuarioExists) throw new NotFoundException(`Estudiante con ID ${id_estudiante} no encontrado`);
-
-    // 3. Crear Inscripción
-    try {
-      return await this.prismaUsuarios.inscripcion.create({
-        data: {
-          id_usuario: id_estudiante,
-          id_materia, // Se guarda el ID plano
-          id_ciclo,   // Se guarda el ID plano
-          calificacion_final,
-        },
-      });
-    } catch (error: any) {
-        // P2002 salta si hay una restricción unique compuesta (ej: usuario+materia+ciclo)
-        if (error.code === 'P2002') {
-          throw new ConflictException('El usuario ya está inscrito en esta materia y ciclo.');
-        }
-        throw error;
-    }
+    const reporte = await Promise.all(estudiantes.map(async (est) => {
+      let carreraNombre = 'Sin Carrera';
+      if (est.inscripciones.length > 0) {
+        const idMateria = est.inscripciones[0].id_materia;
+        const materia = await this.prismaCarreras.materia.findUnique({
+          where: { id_materia: idMateria },
+          include: { carrera: true }
+        });
+        if (materia?.carrera) carreraNombre = materia.carrera.nombre_carrera;
+      }
+      return {
+        estudiante: `${est.nombres} ${est.apellidos}`,
+        estado: est.estado ? 'Activo' : 'Inactivo',
+        carrera: carreraNombre
+      };
+    }));
+    return reporte;
   }
 
-  async findAll() {
-    // Al ser BDs separadas, no podemos hacer 'include: { materia: true }' directamente.
-    // Aquí devolveremos solo los datos de inscripción y el usuario.
+  // 1.2 Obtener materias de una carrera específica (FALTABA ESTE)
+  async obtenerMateriasPorCarrera(idCarrera: number) {
+    return this.prismaCarreras.materia.findMany({
+      where: { id_carrera: idCarrera }
+    });
+  }
+
+  // 1.3 Mostrar matrículas de un estudiante en un período (FALTABA EL FILTRO DE CICLO)
+  async historialPorPeriodo(idUsuario: number, idCiclo: number) {
     return this.prismaUsuarios.inscripcion.findMany({
-      include: {
-        usuario: { select: { id_usuario: true, nombres: true, apellidos: true } },
-      },
+      where: { 
+        id_usuario: idUsuario,
+        id_ciclo: idCiclo 
+      }
     });
   }
 
-  async findOne(id: number) {
-    const inscripcion = await this.prismaUsuarios.inscripcion.findUnique({
-      where: { id_inscripcion: id },
-      include: {
-        usuario: { select: { id_usuario: true, nombres: true, apellidos: true } },
-      },
+  // =======================================================
+  // PARTE 2: OPERACIONES LÓGICAS
+  // =======================================================
+
+  // 2.1 Buscar estudiantes: Activos AND (Carrera X) AND (Periodo Y)
+  // (CORREGIDO: Se agregó el filtro de ciclo que pedía el PDF)
+  async buscarEstudiantesAvanzado(idCarrera: number, idCiclo: number) {
+    const materias = await this.prismaCarreras.materia.findMany({
+      where: { id_carrera: idCarrera },
+      select: { id_materia: true }
     });
-    if (!inscripcion) throw new NotFoundException('Inscripción no encontrada');
-    return inscripcion;
+    const idsMaterias = materias.map(m => m.id_materia);
+
+    return await this.prismaUsuarios.usuario.findMany({
+      where: {
+        AND: [
+          { estado: true }, // 1. Activo
+          {
+            inscripciones: {
+              some: {
+                id_materia: { in: idsMaterias }, // 2. Pertenece a la carrera
+                id_ciclo: idCiclo                // 3. Matriculado en el periodo
+              }
+            }
+          }
+        ]
+      }
+    });
   }
 
-  async update(id: number, updateInscripcioneDto: UpdateInscripcioneDto) {
-    await this.findOne(id);
-    const { id_estudiante, ...data } = updateInscripcioneDto as any;
-    const dataToUpdate = { ...data };
-    
-    if (id_estudiante) dataToUpdate.id_usuario = id_estudiante;
+  // =======================================================
+  // PARTE 3: CONSULTA NATIVA (SQL)
+  // =======================================================
 
-    return this.prismaUsuarios.inscripcion.update({
-      where: { id_inscripcion: id },
-      data: dataToUpdate,
-    });
+  async reporteNativoSQL() {
+    return this.prismaUsuarios.$queryRaw`
+      SELECT 
+        u.nombres, 
+        u.apellidos, 
+        COUNT(i.id_inscripcion)::int as materias_matriculadas
+      FROM usuarios u
+      JOIN inscripciones i ON u.id_usuario = i.id_usuario
+      GROUP BY u.id_usuario, u.nombres, u.apellidos
+      ORDER BY materias_matriculadas DESC;
+    `;
   }
 
-  async remove(id: number) {
-    await this.findOne(id); 
-    return this.prismaUsuarios.inscripcion.delete({
-      where: { id_inscripcion: id },
-    });
+  // =======================================================
+  // PARTE 4: TRANSACCIÓN ACID (Matriculación)
+  // =======================================================
+
+  async matricular(dto: CreateInscripcioneDto) {
+    const { id_usuario, id_materia, id_ciclo } = dto;
+
+    const usuario = await this.prismaUsuarios.usuario.findUnique({ where: { id_usuario } });
+    if (!usuario?.estado) throw new BadRequestException('Usuario no activo');
+
+    const materia = await this.prismaCarreras.materia.findUnique({ where: { id_materia } });
+    if (!materia) throw new BadRequestException('Materia no existe');
+    if (materia.cupos <= 0) throw new BadRequestException('Sin cupos');
+
+    try {
+      // Paso A: Descontar Cupo (DB Carreras)
+      await this.prismaCarreras.materia.update({
+        where: { id_materia },
+        data: { cupos: { decrement: 1 } }
+      });
+
+      // Paso B: Inscribir (DB Usuarios)
+      const inscripcion = await this.prismaUsuarios.inscripcion.create({
+        data: { id_usuario, id_materia, id_ciclo, calificacion_final: 0 }
+      });
+
+      return { mensaje: 'Matrícula Exitosa', inscripcion };
+
+    } catch (error) {
+      // Rollback Manual
+      await this.prismaCarreras.materia.update({
+        where: { id_materia },
+        data: { cupos: { increment: 1 } }
+      }).catch(e => console.error('Error crítico en rollback', e));
+
+      throw new InternalServerErrorException('Error en matrícula, cambios revertidos');
+    }
   }
 }

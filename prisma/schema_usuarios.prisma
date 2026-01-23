@@ -1,4 +1,4 @@
-// prisma/usuarios/schema.prisma
+// prisma/schema_usuarios.prisma
 
 generator client {
   provider = "prisma-client-js"
@@ -8,7 +8,8 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-
+  // Asegúrate de tener la URL en tu .env, ejemplo:
+   
 }
 
 model Usuario {
@@ -19,6 +20,11 @@ model Usuario {
   email            String    @unique
   password         String    @db.VarChar(255)
   fecha_nacimiento DateTime? @db.Date
+
+  // --- NUEVO CAMPO AGREGADO ---
+  // Necesario para filtrar "Estudiantes Activos" en tu tarea
+  estado           Boolean   @default(true) 
+  // -----------------------------
   
   // Relaciones Locales
   id_rol           Int

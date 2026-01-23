@@ -1,4 +1,4 @@
-// prisma/profesores/schema.prisma
+// prisma/schema_profesores.prisma
 
 generator client {
   provider = "prisma-client-js"
@@ -7,7 +7,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-
+  // Recuerda: La URL se inyecta desde prisma.config.profesores.ts
 }
 
 model Profesor {
@@ -16,6 +16,11 @@ model Profesor {
   apellidos          String
   cedula             String            @unique
   email              String            @unique
+
+  // --- CAMPOS NUEVOS OBLIGATORIOS ---
+  tipo_contrato      String            @default("TIEMPO_COMPLETO") 
+  activo             Boolean           @default(true)
+  // ----------------------------------
   
   titulos            Titulo[]
   materias_asignadas ProfesorMateria[]
@@ -37,12 +42,10 @@ model Titulo {
 
 model ProfesorMateria {
   id          Int      @id @default(autoincrement())
-  
   id_profesor Int
   profesor    Profesor @relation(fields: [id_profesor], references: [id_profesor])
   
-  // RELACIÓN EXTERNA:
-  // Guardamos solo el ID. No podemos usar @relation porque Materia está en otra DB.
+  // Relación externa lógica (ID)
   id_materia  Int
 
   @@map("profesor_materia")

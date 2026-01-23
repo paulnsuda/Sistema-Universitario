@@ -1,49 +1,45 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateProfesorDto } from './dto/create-profesore.dto';
 import { UpdateProfesoreDto } from './dto/update-profesore.dto';
-import { PrismaProfesoresService } from 'src/prisma/prisma-profesores.service'; // <--- CAMBIO
+import { PrismaProfesoresService } from '../prisma/prisma-profesores.service';
 
 @Injectable()
 export class ProfesoresService {
-  constructor(private prisma: PrismaProfesoresService) {} // <--- CAMBIO
+  constructor(private prisma: PrismaProfesoresService) {}
 
-  create(createProfesorDto: CreateProfesorDto) {
-    // Extraemos materias_asignadas, pero OJO: no podemos crearlas en una sola transacción
-    // automáticamente si cruzan bases de datos. Por ahora, nos enfocamos en el profesor y títulos.
+  // --- CRUD BÁSICO ---
+  async create(createProfesorDto: CreateProfesorDto) {
     const { titulos, materias_asignadas, ...profesorData } = createProfesorDto;
 
     return this.prisma.profesor.create({
       data: {
-        ...profesorData, 
-        titulos: {
-          create: titulos, 
-        },
+        ...profesorData,
+        titulos: { create: titulos },
+        // Si quisieras crear materias asignadas al inicio:
+        // materias_asignadas: { create: materias_asignadas } 
       },
-      include: {
-        titulos: true, 
-      },
+      include: { titulos: true, materias_asignadas: true },
     });
   }
 
-  findAll() {
+  async findAll() {
     return this.prisma.profesor.findMany({
-      include: { titulos: true }, // Quitamos materias_asignadas del include por ahora
+      include: { titulos: true, materias_asignadas: true }, 
     });
   }
 
   async findOne(id: number) {
     const profesor = await this.prisma.profesor.findUnique({
       where: { id_profesor: id },
-      include: { titulos: true }, 
+      include: { titulos: true, materias_asignadas: true }, 
     });
-    if (!profesor) throw new NotFoundException(`Profesor con ID #${id} no encontrado`);
+    if (!profesor) throw new NotFoundException(`Profesor #${id} no encontrado`);
     return profesor;
   }
 
   async update(id: number, updateProfesorDto: UpdateProfesoreDto) {
     const { titulos, materias_asignadas, ...data } = updateProfesorDto;
     await this.findOne(id);
-    
     return this.prisma.profesor.update({
         where: { id_profesor: id },
         data: data
@@ -52,8 +48,36 @@ export class ProfesoresService {
 
   async remove(id: number) {
     await this.findOne(id);
-    return this.prisma.profesor.delete({
-      where: { id_profesor: id },
+    return this.prisma.profesor.delete({ where: { id_profesor: id } });
+  }
+
+  // --- NUEVAS FUNCIONES PARA TU DEBER ---
+
+  // Parte 1.3: Docentes con más de 1 materia
+  async docentesMultimateria() {
+    const todos = await this.prisma.profesor.findMany({
+      include: { materias_asignadas: true }
+    });
+    return todos.filter(p => p.materias_asignadas.length > 1);
+  }
+
+  // Parte 2.2: Filtros Lógicos (AND, OR, NOT)
+  async filtrosLogicos() {
+    return this.prisma.profesor.findMany({
+      where: {
+        OR: [
+          {
+            AND: [
+              { tipo_contrato: 'TIEMPO_COMPLETO' },
+              { materias_asignadas: { some: {} } }
+            ]
+          },
+          {
+            NOT: { activo: false } // Significa: Activo = true
+          }
+        ]
+      },
+      include: { materias_asignadas: true }
     });
   }
 }

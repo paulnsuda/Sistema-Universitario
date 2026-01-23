@@ -1,15 +1,17 @@
-import { defineConfig, env } from '@prisma/config';
-import "dotenv/config";
+import { defineConfig } from '@prisma/config';
+import "dotenv/config"; // Carga las variables del archivo .env
 
 export default defineConfig({
+  // Apuntamos al archivo schema específico
   schema: 'prisma/schema_profesores.prisma',
+  
+  // Definimos dónde se guardarán las migraciones
   migrations: {
-    path:"prisma/migrations_profesores",
+    path: 'prisma/migrations_profesores',
   },
+
+  // Aquí inyectamos la conexión
   datasource: {
-  
-    url: env("DATABASE_URL_PROFESORES"), // Asegúrate de tener esta variable en tu .env
+    url: process.env.DATABASE_URL_PROFESORES, 
   },
-  
- 
 });
