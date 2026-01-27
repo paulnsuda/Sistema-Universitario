@@ -13,9 +13,7 @@ export class ProfesoresController {
     return this.profesoresService.create(createProfesorDto);
   }
 
-  // =========================================================
-  // ✅ IMPORTANTE: Estos endpoints deben ir PRIMERO
-  // =========================================================
+
 
   @Get('multimateria') 
   getMultimateria() {
